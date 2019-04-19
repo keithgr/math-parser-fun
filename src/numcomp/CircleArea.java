@@ -5,6 +5,8 @@
  */
 package numcomp;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -20,42 +22,42 @@ import net.objecthunter.exp4j.ExpressionBuilder;
  */
 public class CircleArea {
 
-    private static final int THREAD_COUNT = 2;
-    private static final int TASK_SIZE = 250;
+    private static final int THREAD_COUNT = 4;
+    private static final int TASK_SIZE = 10_000;
+    private static final int NUM_POINTS = 10_000_000;
 
-    private static final String FORMULA = "sin(x)cos(y) + cos(x)sin(y)";
+    private static final String FORMULA = "sqrt(1 - x^2)";
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
         ExecutorService es = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<BigDecimal>> pendingResults = new ArrayList<>();
 
-        List<Future<Double>> pendingResults = new ArrayList<>();
-        for (int x = 0; x < 10_000; x++) {
-            for (int y = 0; y < 1_000; y += TASK_SIZE) {
-                int x1 = x;
-                int y1 = y;
-                Callable<Double> calculation = () -> {
-                    double sum = 0.0;
-                    for (int i = y1; i < y1 + TASK_SIZE; i++) {
-                        sum += new ExpressionBuilder(FORMULA)
-                                .variables("x", "y")
-                                .build()
-                                .setVariable("x", x1)
-                                .setVariable("y", i).evaluate();
-                    }
-                    return sum;
-                };
+        BigDecimal ptInc = BigDecimal.ONE.divide(new BigDecimal(NUM_POINTS));
+        BigDecimal taskInc = ptInc.multiply(new BigDecimal(TASK_SIZE));
+        for (BigDecimal x = BigDecimal.ZERO; x.compareTo(BigDecimal.ONE) == -1; x = x.add(taskInc)) {
+            BigDecimal x_0 = x.abs();
+            Callable<BigDecimal> calculation = () -> {
+                BigDecimal sum = BigDecimal.ZERO;
+                for (BigDecimal xInput = x_0.abs(); xInput.compareTo(x_0.add(taskInc)) == -1; xInput = xInput.add(ptInc)) {
+                    sum = sum.add(
+                            (BigDecimal.ONE.subtract(xInput.pow(2)))
+                                    .sqrt(new MathContext(100))
+                                    .multiply(ptInc)
+                    );
+                }
+                return sum;
+            };
 
-                Future<Double> pendingResult = es.submit(calculation);
-                pendingResults.add(pendingResult);
-            }
+            Future<BigDecimal> pendingResult = es.submit(calculation);
+            pendingResults.add(pendingResult);
         }
 
-        double sum = 0.0;
+        BigDecimal sum = BigDecimal.ZERO;
         for (var pr : pendingResults) {
-            double result = pr.get();
-            sum += result;
+            BigDecimal result = pr.get();
+            sum = sum.add(result);
         }
-        System.out.printf("Sum = %.6f\n", sum);
+        System.out.printf("Sum = %s\n", sum.multiply(new BigDecimal(4)).toPlainString());
 
         es.shutdown();
     }
