@@ -20,7 +20,9 @@ import net.objecthunter.exp4j.ExpressionBuilder;
  */
 public class CircleArea {
 
-    private static final int THREAD_COUNT = 6;
+    private static final int THREAD_COUNT = 2;
+    private static final int TASK_SIZE = 250;
+
     private static final String FORMULA = "sin(x)cos(y) + cos(x)sin(y)";
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
@@ -28,14 +30,20 @@ public class CircleArea {
 
         List<Future<Double>> pendingResults = new ArrayList<>();
         for (int x = 0; x < 10_000; x++) {
-            for (int y = 0; y < 1_000; y += 1) {
+            for (int y = 0; y < 1_000; y += TASK_SIZE) {
                 int x1 = x;
                 int y1 = y;
-                Callable<Double> calculation = new ExpressionBuilder(FORMULA)
-                        .variables("x", "y")
-                        .build()
-                        .setVariable("x", x1)
-                        .setVariable("y", y1)::evaluate;
+                Callable<Double> calculation = () -> {
+                    double sum = 0.0;
+                    for (int i = y1; i < y1 + TASK_SIZE; i++) {
+                        sum += new ExpressionBuilder(FORMULA)
+                                .variables("x", "y")
+                                .build()
+                                .setVariable("x", x1)
+                                .setVariable("y", i).evaluate();
+                    }
+                    return sum;
+                };
 
                 Future<Double> pendingResult = es.submit(calculation);
                 pendingResults.add(pendingResult);
