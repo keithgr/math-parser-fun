@@ -31,14 +31,11 @@ public class CircleArea {
             for (int y = 0; y < 1_000; y += 1) {
                 int x1 = x;
                 int y1 = y;
-                Callable<Double> calculation = () -> {
-                    return new ExpressionBuilder(FORMULA)
-                            .variables("x", "y")
-                            .build()
-                            .setVariable("x", x1)
-                            .setVariable("y", y1)
-                            .evaluate();
-                };
+                Callable<Double> calculation = new ExpressionBuilder(FORMULA)
+                        .variables("x", "y")
+                        .build()
+                        .setVariable("x", x1)
+                        .setVariable("y", y1)::evaluate;
 
                 Future<Double> pendingResult = es.submit(calculation);
                 pendingResults.add(pendingResult);
