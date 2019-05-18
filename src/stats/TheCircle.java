@@ -11,7 +11,7 @@ package stats;
  */
 public class TheCircle {
     
-    private static final int SIZE = 100;
+    private static final int SIZE = 10_000;
     private static final double[][] PROBS = new double[SIZE + 1][SIZE + 1];
     static {
         for (int n = 0; n <= SIZE; n++) {
@@ -26,25 +26,8 @@ public class TheCircle {
     } 
     
     public static void main(String[] args) {
-        // Print options header
-        for (int n = 1; n <= SIZE; n++) {
-            System.out.printf("\tOpts %d", n);
-        }
-        System.out.printf("\n");
-        
-        // Print table
         for (int c = 1; c <= SIZE; c++) {
-            System.out.printf("Ch %d", c);
-            
-            for (int n = 1; n <= SIZE; n++) {
-                if(n < c) {
-                    System.out.printf("\t");
-                }
-                else {
-                    System.out.printf("\t%.12f", getProb(n,c));
-                }
-            }
-            System.out.printf("\n");
+            System.out.printf("%d\t%.15f\n", c, getProb(SIZE, c));
         }
     }
     
